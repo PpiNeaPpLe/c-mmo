@@ -1,0 +1,21 @@
+RPG 
+
+Player choses from 3 Classes
+
+Paladin
+- Holy Strike (dmg + self-heal)
+- Aura of Light (party heal over time)
+- Strike (dmg)
+Rouge
+- mischief planning (next turn x2 dmg)
+- Poison Dagger (DoT) 
+- Backstab (DMG)
+Mage
+- Ice Shield (damage reduction)
+- Chain Lighting (DoT)
+- Fireball (Stun + DMG)
+
+Consumables
+Health Potion (restore HP)
+Antidote (cure poison/DoT)
+Strength Potion (Adds more damage)
