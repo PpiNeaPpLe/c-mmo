@@ -33,14 +33,14 @@ The player chooses from one of three distinct classes and utilizes their unique 
 
 This section tracks the implementation of required C features as per the grading criteria.
 
-*   [ ] Pointers
-*   [ ] Strings and at least one string function
-*   [ ] At least one of Arrays and Linked Lists
-*   [ ] At least one of Structs and Unions
+*   [x] Pointers (Used in Enemy struct `char *name`, implicitly with string functions)
+*   [x] Strings and at least one string function (`fgets`, `strncpy`, `strcspn` used)
+*   [x] At least one of Arrays and Linked Lists (`player.name` char array)
+*   [x] At least one of Structs and Unions (`Player`, `Enemy` structs defined)
 *   [ ] Bitfields (if Structs are used)
-*   [ ] Multiple source files
-*   [ ] Header files
-*   [ ] Make or similar build tools
+*   [x] Multiple source files (`main.c`, `player.c`, etc.)
+*   [x] Header files (`player.h`, `enemy.h`, `game.h`)
+*   [x] Make or similar build tools (`Makefile` created)
 *   [ ] Command line options and arguments
 *   [ ] Environment Variables
 *   [ ] `malloc()` and `free()`
@@ -48,5 +48,5 @@ This section tracks the implementation of required C features as per the grading
 
 ### Build and Execution
 
-*   [ ] Project compiles using `make`.
+*   [x] Project compiles using `make`. (Assuming build-essential installed)
 *   [ ] Program runs without memory leaks (verified with `valgrind`).

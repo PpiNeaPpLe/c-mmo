@@ -9,4 +9,10 @@
 // For example:
 // void start_combat(Player *player, Enemy *enemy);
 
+// Handles the player's turn
+void player_turn(Player *player, Enemy *enemy);
+
+// Handles the enemy's turn
+void enemy_turn(Player *player, Enemy *enemy);
+
 #endif // GAME_H 

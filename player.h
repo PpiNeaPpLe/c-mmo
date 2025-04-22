@@ -16,5 +16,6 @@ typedef struct {
 // Function prototypes for player actions will go here
 // For example:
 // void initialize_player(Player *player);
+void initialize_player(Player *player, const char *name);
 
 #endif // PLAYER_H 
