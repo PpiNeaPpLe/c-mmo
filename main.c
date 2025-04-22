@@ -23,12 +23,6 @@ int main()
     printf("      Welcome to Simple RPG!\n");
     printf("====================================\n\n");
     
-    // Display class options
-    printf("Choose your class:\n");
-    printf("- Rogue\n");
-    printf("- Mage\n");
-    printf("- Paladin\n\n");
-    
     // Get player name
     printf("Enter your name, adventurer: ");
     if (fgets(playerName, sizeof(playerName), stdin) != NULL) {
@@ -98,6 +92,11 @@ int main()
     {
         printf("%s defeated %s! You Win!\n", player.name, enemy.name);
     }
+
+    // --- Cleanup --- 
+    // IMPORTANT: Free allocated memory before exiting
+    cleanup_player(&player);
+    // Note: Enemy name was a string literal, no need to free enemy struct fields
 
     return 0;
 }

@@ -2,7 +2,18 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
+#include "items.h" // need this for Item type
+
 #define MAX_NAME_LENGTH 50
+#define INITIAL_INVENTORY_CAPACITY 5 // how many items can we hold at start
+
+// define the classes
+enum ClassType {
+    PALADIN, // 0
+    ROGUE,   // 1
+    MAGE     // 2
+    // maybe add more later?
+};
 
 // Basic Player structure
 typedef struct {
@@ -10,12 +21,19 @@ typedef struct {
     int hp;
     int maxHp;
     int damage;
-    // We'll add class later
+    enum ClassType playerClass; // what class r they
+
+    // inventory stuff
+    Item **inventory;       // array of pointers to items, needs malloc
+    int inventory_size;     // how many items we HAVE
+    int inventory_capacity; // how many slots we allocated
+
 } Player;
 
 // Function prototypes for player actions will go here
 // For example:
 // void initialize_player(Player *player);
 void initialize_player(Player *player, const char *name);
+void cleanup_player(Player *player); // need func to free inventory later
 
 #endif // PLAYER_H 
