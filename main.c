@@ -1,11 +1,10 @@
-// Need these for printf, strings, random stuff, and time
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h> // Needed for srand, rand
-#include <time.h>   // Needed for time
-#include <stdbool.h> // For bool type
+#include <stdlib.h> // random numbers
+#include <time.h>   //time
+#include <stdbool.h> // bool for god mode
 
-// My other C files
+// headers
 #include "player.h"
 #include "enemy.h"
 #include "game.h"
