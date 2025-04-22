@@ -38,7 +38,7 @@ typedef struct {
 // Function prototypes for player actions will go here
 // For example:
 // void initialize_player(Player *player);
-void initialize_player(Player *player, const char *name);
+void initialize_player(Player *player, const char *name, bool god_mode);
 void cleanup_player(Player *player); // need func to free inventory later
 
 #endif // PLAYER_H 

@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdlib.h> // Needed for srand, rand
 #include <time.h>   // Needed for time
+#include <stdbool.h> // For bool type
 
 // My other C files
 #include "player.h"
@@ -19,13 +20,26 @@ int main(int argc, char *argv[])
 
     char playerName[MAX_NAME_LENGTH];
     int name_set_from_args = 0; // Flag to see if we got name from args
+    bool god_mode_enabled = false; // Flag for god mode
 
-    // Simple check for '-name' argument
-    if (argc == 3 && strcmp(argv[1], "-name") == 0) {
-        strncpy(playerName, argv[2], MAX_NAME_LENGTH - 1);
-        playerName[MAX_NAME_LENGTH - 1] = '\0'; // Ensure null termination
-        printf("Starting game with player name: %s\n", playerName);
-        name_set_from_args = 1;
+    // --- Argument Parsing --- 
+    for (int i = 1; i < argc; ++i) { // Start from 1 to skip program name
+        if (strcmp(argv[i], "-name") == 0) {
+            if (i + 1 < argc) { // Make sure there's a name after the flag
+                strncpy(playerName, argv[i + 1], MAX_NAME_LENGTH - 1);
+                playerName[MAX_NAME_LENGTH - 1] = '\0'; // Ensure null termination
+                printf("Starting game with player name: %s\n", playerName);
+                name_set_from_args = 1;
+                i++; // Skip the next argument (the name itself)
+            } else {
+                fprintf(stderr, "Warning: -name flag requires an argument.\n");
+            }
+        } else if (strcmp(argv[i], "-god") == 0) {
+            god_mode_enabled = true;
+            printf("GOD MODE ENABLED!\n");
+        } else {
+            fprintf(stderr, "Warning: Unknown argument '%s' ignored.\n", argv[i]);
+        }
     }
 
     // Fancy title screen
@@ -68,7 +82,7 @@ int main(int argc, char *argv[])
 
     // --- Set up the fighters ---
     printf("\n--- Preparing for Battle! ---\n");
-    initialize_player(&player, playerName);
+    initialize_player(&player, playerName, god_mode_enabled);
     initialize_enemy(&enemy); 
 
     // --- Fight! ---

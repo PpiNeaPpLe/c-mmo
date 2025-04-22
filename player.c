@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h> // Need for malloc, free, exit
 #include <ctype.h> // for isdigit maybe? nah lets just use scanf
+#include <stdbool.h> // include bool for god_mode flag
 
 // Clears the input buffer after scanf fails or reads part of a line
 void clear_input_buffer() {
@@ -14,7 +15,7 @@ void clear_input_buffer() {
 }
 
 // Initialize the player with a name and prompt for class
-void initialize_player(Player *player, const char *name) {
+void initialize_player(Player *player, const char *name, bool god_mode) {
     // check for dumb stuff
     if (player == NULL || name == NULL) {
         fprintf(stderr, "Error: Cannot initialize player with NULL pointers.\n");
@@ -85,6 +86,14 @@ void initialize_player(Player *player, const char *name) {
     }
 
     player->maxHp = player->hp; // max hp is same as starting hp for now
+
+    // --- Apply God Mode Stats --- 
+    if (god_mode) {
+        printf("*** GOD MODE STATS APPLIED ***\n");
+        player->hp = 9999;
+        player->maxHp = 9999;
+        player->damage = 999;
+    }
 
     // ---- Initialize Inventory ----
     player->inventory_capacity = INITIAL_INVENTORY_CAPACITY;
