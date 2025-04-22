@@ -2,6 +2,7 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
+#include <stdbool.h> // Include for bool type
 #include "items.h" // need this for Item type
 
 #define MAX_NAME_LENGTH 50
