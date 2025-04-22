@@ -22,8 +22,14 @@ void initialize_player(Player *player, const char *name) {
     }
 
     // copy the name over
-    strncpy(player->name, name, MAX_NAME_LENGTH - 1);
-    player->name[MAX_NAME_LENGTH - 1] = '\0'; // make sure it ends right
+    player->name = malloc(strlen(name) + 1); // +1 for null terminator
+    if (player->name == NULL) {
+        fprintf(stderr, "Fatal Error: Could not allocate memory for player name.\n");
+        // no inventory to free yet
+        exit(1); 
+    }
+    // Now copy the name using strcpy (safe because we allocated enough space)
+    strcpy(player->name, name); 
     
     int choice = 0;
     int validInput = 0;
@@ -147,7 +153,14 @@ void initialize_player(Player *player, const char *name) {
 void cleanup_player(Player *player) {
     if (player == NULL) return;
 
-    printf("Cleaning up player %s...\n", player->name);
+    // --- FIX: Free player name if allocated ---
+    if (player->name != NULL) {
+        printf("Cleaning up player %s...\n", player->name); // Print name before freeing
+        free(player->name);
+        player->name = NULL;
+    } else {
+        printf("Cleaning up unnamed player...\n");
+    }
 
     // free each item AND its name string
     if (player->inventory != NULL) {
@@ -166,6 +179,7 @@ void cleanup_player(Player *player) {
         free(player->inventory);
         player->inventory = NULL;
     }
-    player->inventory_size = 0;
-    player->inventory_capacity = 0;
+    // --- Remove redundant cleanup messages ---
+    // player->inventory_size = 0; // No need to reset these after freeing
+    // player->inventory_capacity = 0;
 } 

@@ -37,7 +37,7 @@ This section tracks the implementation of required C features as per the grading
 *   [x] Strings and at least one string function (`fgets`, `strncpy`, `strcspn` used)
 *   [x] At least one of Arrays and Linked Lists (`player.name` char array)
 *   [x] At least one of Structs and Unions (`Player`, `Enemy` structs defined)
-*   [ ] Bitfields (if Structs are used)
+*   [x] Bitfields (if Structs are used)
 *   [x] Multiple source files (`main.c`, `player.c`, etc.)
 *   [x] Header files (`player.h`, `enemy.h`, `game.h`)
 *   [x] Make or similar build tools (`Makefile` created)
