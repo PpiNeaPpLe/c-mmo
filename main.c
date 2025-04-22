@@ -1,42 +1,54 @@
+// Need these for printf, strings, random stuff, and time
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h> // Needed for srand, rand
 #include <time.h>   // Needed for time
 
-// Include our new headers
+// My other C files
 #include "player.h"
 #include "enemy.h"
 #include "game.h"
 
-int main() 
+int main(int argc, char *argv[])
 {
-    // Seed random number generator (useful for combat later)
+    // Make the random numbers actually random (kinda)
     srand(time(NULL));
 
     Player player;
     Enemy enemy;
 
     char playerName[MAX_NAME_LENGTH];
+    int name_set_from_args = 0; // Flag to see if we got name from args
 
-    // Display game title and welcome message
+    // Simple check for '-name' argument
+    if (argc == 3 && strcmp(argv[1], "-name") == 0) {
+        strncpy(playerName, argv[2], MAX_NAME_LENGTH - 1);
+        playerName[MAX_NAME_LENGTH - 1] = '\0'; // Ensure null termination
+        printf("Starting game with player name: %s\n", playerName);
+        name_set_from_args = 1;
+    }
+
+    // Fancy title screen
     printf("====================================\n");
     printf("      Welcome to Simple RPG!\n");
     printf("====================================\n\n");
     
-    // Get player name
-    printf("Enter your name, adventurer: ");
-    if (fgets(playerName, sizeof(playerName), stdin) != NULL) {
-        playerName[strcspn(playerName, "\n")] = '\0';
-    } else {
-        // Handle error reading name, e.g., use a default name
-        strncpy(playerName, "Hero", MAX_NAME_LENGTH - 1);
-        playerName[MAX_NAME_LENGTH - 1] = '\0';
-        printf("Could not read name, proceeding as 'Hero'.\n");
-        // We might need to clear stdin here if fgets failed mid-read
-        // but for simplicity, we'll assume it failed cleanly or got EOF
+    // Ask for player name ONLY if not set by args
+    if (!name_set_from_args) {
+        printf("Enter your name, adventurer: ");
+        if (fgets(playerName, sizeof(playerName), stdin) != NULL) {
+            // Get rid of the newline character fgets leaves
+            playerName[strcspn(playerName, "\n")] = '\0';
+        } else {
+            // Uh oh, couldn't read the name? just call them Hero lol
+            strncpy(playerName, "Hero", MAX_NAME_LENGTH - 1);
+            playerName[MAX_NAME_LENGTH - 1] = '\0'; // Make sure it's null-terminated
+            printf("Could not read name, proceeding as 'Hero'.\n");
+            // might need to clear stdin here? idk, probably fine
+        }
     }
     
-    // Display story introduction
+    // Story time!
     printf("\nGreetings, %s!\n\n", playerName);
     printf("Long ago, the Crown of Light kept the kingdom of Eldergarde in peace\n"
            "—until the paladin Malakar, consumed by greed, stole it and twisted its\n"
@@ -47,56 +59,56 @@ int main()
            "wits and your steel. The villagers' eyes turn to you, desperate for hope.\n"
            "Will you answer the call?\n\n");
     
-    // Wait for user to continue
+    // Make 'em hit Enter
     printf("(Press Enter to continue...)");
-    // Consume potential leftover newline from fgets before waiting for Enter
+    // Eat the leftover newline from fgets if there was one
     int c;
     while ((c = getchar()) != '\n' && c != EOF);
-    getchar(); // Wait for Enter press
+    getchar(); // Now wait for the real Enter press
 
-    // --- Setup Player and Enemy --- 
+    // --- Set up the fighters ---
     printf("\n--- Preparing for Battle! ---\n");
     initialize_player(&player, playerName);
     initialize_enemy(&enemy); 
 
-    // --- Main Game Loop (Combat) ---
+    // --- Fight! ---
     printf("\n--- Combat Start! ---\n");
     int turn = 1;
     while (player.hp > 0 && enemy.hp > 0)
     {
         printf("\n--- Turn %d ---\n", turn);
-        // Display HP before the player acts
+        // Show HP before player goes
         printf("%s HP: %d/%d | %s HP: %d/%d\n", 
                player.name, player.hp, player.maxHp, 
                enemy.name, enemy.hp, enemy.maxHp);
 
-        // Player's Turn
+        // Player's turn
         player_turn(&player, &enemy);
         
-        // Check if enemy defeated after player's turn
-        if (enemy.hp <= 0) break;
+        // Did the player win?
+        if (enemy.hp <= 0) break; // exit loop if enemy dead
 
-        // Enemy's Turn
+        // Enemy's turn
         enemy_turn(&player, &enemy);
 
-        turn++;
+        turn++; // Next turn
     }
 
-    // --- Combat End --- 
+    // --- Who won? ---
     printf("\n--- Combat Over ---\n");
     if (player.hp <= 0)
     {
         printf("%s was defeated! Game Over.\n", player.name);
     }
-    else // Enemy must have hp <= 0
+    else // Enemy must be dead
     {
         printf("%s defeated %s! You Win!\n", player.name, enemy.name);
     }
 
-    // --- Cleanup --- 
-    // IMPORTANT: Free allocated memory before exiting
+    // --- Clean up ---
+    // TODO: gotta free memory later if we use malloc
     cleanup_player(&player);
-    // Note: Enemy name was a string literal, no need to free enemy struct fields
+    // Enemy name is just text, no need to free it
 
-    return 0;
+    return 0; // We're done!
 }

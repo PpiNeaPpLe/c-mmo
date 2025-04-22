@@ -17,7 +17,7 @@ enum ClassType {
 
 // Basic Player structure
 typedef struct {
-    char name[MAX_NAME_LENGTH];
+    char *name;
     int hp;
     int maxHp;
     int damage;
@@ -27,6 +27,11 @@ typedef struct {
     Item **inventory;       // array of pointers to items, needs malloc
     int inventory_size;     // how many items we HAVE
     int inventory_capacity; // how many slots we allocated
+
+    //  bitfields for statuses
+    unsigned int is_poisoned : 1;
+    unsigned int is_shielded : 1;
+    unsigned int turn_skipped : 1;
 
 } Player;
 
