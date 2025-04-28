@@ -87,12 +87,20 @@ void initialize_player(Player *player, const char *name, bool god_mode) {
 
     player->maxHp = player->hp; // max hp is same as starting hp for now
 
+    // init the new stats at level 1
+    player->xp = 0;
+    player->level = 1;
+    player->kills = 0;
+    player->gold = 10; // start with a bit of gold
+    player->area_level = 1; // starting area
+    
     // --- Apply God Mode Stats --- 
     if (god_mode) {
         printf("*** GOD MODE STATS APPLIED ***\n");
         player->hp = 9999;
         player->maxHp = 9999;
         player->damage = 999;
+        player->gold = 9999; // lots of money in god mode lol
     }
 
     // ---- Initialize Inventory ----
@@ -153,10 +161,10 @@ void initialize_player(Player *player, const char *name, bool god_mode) {
         free(starting_item);
     }
 
-    printf("Player %s (%s) created! HP: %d/%d, Damage: %d\n", 
+    printf("Player %s (%s) created! HP: %d/%d, Damage: %d, Level: %d\n", 
            player->name, 
            (player->playerClass == PALADIN) ? "Paladin" : (player->playerClass == ROGUE) ? "Rogue" : "Mage", // show class name
-           player->hp, player->maxHp, player->damage);
+           player->hp, player->maxHp, player->damage, player->level);
 }
 
 // free memory allocated for player stuff
@@ -192,4 +200,58 @@ void cleanup_player(Player *player) {
     // --- Remove redundant cleanup messages ---
     // player->inventory_size = 0; // No need to reset these after freeing
     // player->inventory_capacity = 0;
+}
+
+// Add XP to player and level up if needed
+bool add_player_xp(Player *player, int xp_amount) {
+    if (player == NULL || xp_amount <= 0) {
+        return false; // invalid inputs
+    }
+    
+    // calculate how much XP needed for next level
+    // simple formula: 100 * current_level
+    int xp_needed = 100 * player->level;
+    
+    // add the XP
+    player->xp += xp_amount;
+    printf("%s gained %d XP! (Total: %d/%d)\n", 
+           player->name, xp_amount, player->xp, xp_needed);
+    
+    // check if we leveled up
+    if (player->xp >= xp_needed) {
+        // level up!!
+        player->level++;
+        player->xp -= xp_needed; // carry over extra XP
+        
+        // improve stats based on class
+        switch (player->playerClass) {
+            case PALADIN:
+                player->maxHp += 10;  // more HP for tanks
+                player->damage += 1;  // small damage boost
+                break;
+                
+            case ROGUE:
+                player->maxHp += 5;   // small HP boost
+                player->damage += 3;  // bigger damage boost
+                break;
+                
+            case MAGE:
+                player->maxHp += 7;   // medium HP boost
+                player->damage += 2;  // medium damage boost
+                break;
+        }
+        
+        // heal to full on level up cuz im nice lol
+        player->hp = player->maxHp;
+        
+        printf("\n🎉 LEVEL UP! 🎉\n");
+        printf("%s is now level %d!\n", player->name, player->level);
+        printf("Max HP increased to %d\n", player->maxHp);
+        printf("Damage increased to %d\n", player->damage);
+        printf("Health restored to full!\n");
+        
+        return true; // we did level up
+    }
+    
+    return false; // didn't level up
 } 

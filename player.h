@@ -23,6 +23,13 @@ typedef struct {
     int maxHp;
     int damage;
     enum ClassType playerClass; // what class r they
+    
+    // new stuff for saving & progression!!
+    int xp;          // how much XP we have
+    int level;       // what level r we at
+    int kills;       // how many monsters we've killed
+    int gold;        // money for buying stuff maybe?
+    int area_level;  // which area we're in
 
     // inventory stuff
     Item **inventory;       // array of pointers to items, needs malloc
@@ -41,5 +48,9 @@ typedef struct {
 // void initialize_player(Player *player);
 void initialize_player(Player *player, const char *name, bool god_mode);
 void cleanup_player(Player *player); // need func to free inventory later
+
+// add xp to player & level up if needed
+// returns true if leveled up
+bool add_player_xp(Player *player, int xp_amount);
 
 #endif // PLAYER_H 

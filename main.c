@@ -10,6 +10,7 @@
 #include "enemy.h"
 #include "game.h"
 #include "utils.h" // added utils header
+#include "save_game.h" // added save game header
 
 // prints game usage instructions
 void print_usage(const char* program_name) {
@@ -23,6 +24,7 @@ void print_usage(const char* program_name) {
     printf("                   0=easy, 1=normal, 2=hard\n");
     printf("  -difficulty LEVEL  Same as -dif\n");
     printf("  -nofun           Disable easter eggs and fun stuff\n");
+    printf("  -new             Force start a new game (ignore saved game)\n");
     printf("  -help            Show this help message\n");
     printf("\nExamples:\n");
     printf("  %s -name Wizard -log 15 -dif 0\n", program_name);
@@ -64,7 +66,8 @@ const char* find_closest_param(const char* input) {
         {"-log", "-l", "-debug"},
         {"-dif", "-difficulty", "-d"},
         {"-nofun", "-boring", "-serious"},
-        {"-help", "--help", "-h"}
+        {"-help", "--help", "-h"},
+        {"-new", "--new", "-newgame"}
     };
     
     const int num_param_groups = sizeof(known_params) / sizeof(known_params[0]);
@@ -121,6 +124,7 @@ int main(int argc, char *argv[])
     int log_level_override = -1;   // -1 means use environment
     bool show_help = false; // Flag to show help
     bool had_invalid_arg = false; // Flag to track invalid arguments
+    bool force_new_game = false; // Flag to force starting a new game
 
     // Initialize environment variables first thing
     setup_env_variables();
@@ -208,6 +212,10 @@ int main(int argc, char *argv[])
             
             // Reinitialize environment to apply changes
             setup_env_variables();
+        } else if (strcmp(arg, "-new") == 0) {
+            // Force starting a new game
+            force_new_game = true;
+            printf("Starting a new game (ignoring any saved game).\n");
         } else if (strcmp(arg, "-help") == 0 || strcmp(arg, "--help") == 0 || strcmp(arg, "-h") == 0) {
             // Show help
             show_help = true;
@@ -248,142 +256,130 @@ int main(int argc, char *argv[])
         }
     }
 
-    // Handle funny or nonsensical inputs with Easter eggs if enabled
-    if (is_logging_enabled(LOG_FUNNY)) {
-        // Check environment for joke variables
-        const char* joke_var = getenv("GAME_FART");
-        if (joke_var != NULL) {
-            printf("💨 PFFFFFFTTTtttt! Someone set GAME_FART=%s! Gross!\n", joke_var);
-        }
-    }
-
-    // If there was an invalid argument or help was requested, show usage
-    if (had_invalid_arg || show_help) {
+    // --- Show Help and Exit if Requested ---
+    if (show_help) {
         print_usage(argv[0]);
-        
-        // If help was explicitly requested, exit with success
-        // Otherwise exit with error code
-        if (show_help && !had_invalid_arg) {
-            return 0;
-        } else if (had_invalid_arg) {
-            fprintf(stderr, "Run with -help for more information.\n");
-            return 1;
-        }
+        return 0;
     }
 
-    // Show command line help if the debug log level is enabled
-    if (is_logging_enabled(LOG_DEBUG)) {
-        log_event(LOG_DEBUG, "Command line options detected:");
-        if (name_set_from_args) {
-            log_event(LOG_DEBUG, "  Name: %s", playerName);
-        }
-        if (god_mode_enabled) {
-            log_event(LOG_DEBUG, "  God mode: enabled");
-        }
-        log_event(LOG_DEBUG, "  Log level: 0x%X", get_env_int("GAME_LOG_LEVEL", 0));
-        log_event(LOG_DEBUG, "  Difficulty: %d", get_env_int("GAME_DIFFICULTY", 1));
-        log_event(LOG_DEBUG, "  Easter eggs: %s", 
-                 get_env_bool("GAME_EASTER_EGGS", true) ? "enabled" : "disabled");
+    // If there were invalid arguments, show usage and return error
+    if (had_invalid_arg) {
+        printf("Use -help for more information on valid options.\n");
+        return 1;
     }
 
-    // Fancy title screen
-    printf("====================================\n");
-    printf("      Welcome to Simple RPG!\n");
-    printf("====================================\n\n");
-    
-    // Ask for player name ONLY if not set by args
+    // --- Print Welcome Message ---
+    printf("\n");
+    printf("*************************************\n");
+    printf("*      Welcome to C-MMO RPG!       *\n");
+    printf("*************************************\n");
+    printf("\n");
+
+    // --- Get Player Name if Not Provided in Arguments ---
     if (!name_set_from_args) {
-        printf("Enter your name, adventurer: ");
-        if (fgets(playerName, sizeof(playerName), stdin) != NULL) {
-            // Get rid of the newline character fgets leaves
-            playerName[strcspn(playerName, "\n")] = '\0';
+        printf("Enter your name (max %d chars): ", MAX_NAME_LENGTH - 1);
+        if (fgets(playerName, MAX_NAME_LENGTH, stdin) == NULL) {
+            // Error reading input
+            fprintf(stderr, "Error reading name. Using default.\n");
+            strcpy(playerName, "Unknown");
         } else {
-            // Uh oh, couldn't read the name? just call them Hero lol
-            strncpy(playerName, "Hero", MAX_NAME_LENGTH - 1);
-            playerName[MAX_NAME_LENGTH - 1] = '\0'; // Make sure it's null-terminated
-            printf("Could not read name, proceeding as 'Hero'.\n");
-            // might need to clear stdin here? idk, probably fine
+            // Remove newline character if present
+            playerName[strcspn(playerName, "\n")] = '\0';
+            
+            // Check if name is empty
+            if (playerName[0] == '\0') {
+                strcpy(playerName, "Unknown");
+                printf("No name entered. Using 'Unknown'.\n");
+            }
         }
     }
     
-    // Show environment variables if debug is enabled
-    if (is_logging_enabled(LOG_DEBUG)) {
-        const char* difficulty_env = getenv("GAME_DIFFICULTY");
-        const char* easter_eggs_env = getenv("GAME_EASTER_EGGS");
-        const char* log_level_env = getenv("GAME_LOG_LEVEL");
+    // --- Check for saved game ---
+    bool should_load_save = false;
+    
+    if (!force_new_game && save_game_exists()) {
+        printf("\nSaved game found!\n");
+        printf("Do you want to load your saved game?\n");
         
-        log_event(LOG_DEBUG, "Environment variables set:");
-        log_event(LOG_DEBUG, "  GAME_DIFFICULTY=%s", difficulty_env ? difficulty_env : "not set");
-        log_event(LOG_DEBUG, "  GAME_EASTER_EGGS=%s", easter_eggs_env ? easter_eggs_env : "not set");
-        log_event(LOG_DEBUG, "  GAME_LOG_LEVEL=%s", log_level_env ? log_level_env : "not set");
+        // Get yes/no
+        char response[10];
+        printf("Load game? (y/n): ");
+        if (fgets(response, sizeof(response), stdin) != NULL) {
+            // Remove newline
+            response[strcspn(response, "\n")] = '\0';
+            
+            // Convert to lowercase
+            for (int i = 0; response[i]; i++) {
+                response[i] = tolower(response[i]);
+            }
+            
+            if (response[0] == 'y') {
+                should_load_save = true;
+            }
+        }
     }
     
-    // Story time!
-    printf("\nGreetings, %s!\n\n", playerName);
-    printf("Long ago, the Crown of Light kept the kingdom of Eldergarde in peace\n"
-           "—until the paladin Malakar, consumed by greed, stole it and twisted its\n"
-           "power into something dark. Now, the land withers. Monsters stalk the\n"
-           "villages. And whispers speak of a shadow creeping from the Ashen Keep,\n"
-           "where Malakar waits.\n\n"
-           "You, a fledgling adventurer, arrive in Eldergarde with nothing but your\n"
-           "wits and your steel. The villagers' eyes turn to you, desperate for hope.\n"
-           "Will you answer the call?\n\n");
-    
-    // Make 'em hit Enter
-    printf("(Press Enter to continue...)");
-    // Eat the leftover newline from fgets if there was one
-    int c;
-    while ((c = getchar()) != '\n' && c != EOF);
-    getchar(); // Now wait for the real Enter press
-
-    // --- Set up the fighters ---
-    printf("\n--- Preparing for Battle! ---\n");
-    initialize_player(&player, playerName, god_mode_enabled);
-    initialize_enemy(&enemy); 
-
-    // --- Fight! ---
-    printf("\n--- Combat Start! ---\n");
-    int turn = 1;
-    while (player.hp > 0 && enemy.hp > 0)
-    {
-        printf("\n--- Turn %d ---\n", turn);
-        // Show HP before player goes
-        printf("%s HP: %d/%d | %s HP: %d/%d\n", 
-               player.name, player.hp, player.maxHp, 
-               enemy.name, enemy.hp, enemy.maxHp);
-
-        // Log start of turn with our variadic function
-        log_event(LOG_DEBUG, "Starting turn %d", turn);
-
-        // Player's turn
-        player_turn(&player, &enemy);
+    // --- Initialize Player ---
+    if (should_load_save) {
+        // Initialize with dummy name first
+        initialize_player(&player, "temp", god_mode_enabled);
         
-        // Did the player win?
-        if (enemy.hp <= 0) break; // exit loop if enemy dead
-
-        // Enemy's turn
-        enemy_turn(&player, &enemy);
-
-        turn++; // Next turn
+        // Then load saved data
+        if (load_game(&player)) {
+            printf("Game loaded successfully!\n");
+            
+            // Set god mode if enabled in command line
+            if (god_mode_enabled) {
+                printf("God mode enabled for loaded character!\n");
+                player.hp = 9999;
+                player.maxHp = 9999;
+                player.damage = 999;
+            }
+        } else {
+            // Fall back to new game if load fails
+            printf("Failed to load game, starting new game instead.\n");
+            cleanup_player(&player); // Clean up any partial loading
+            initialize_player(&player, playerName, god_mode_enabled);
+        }
+    } else {
+        // Start new game
+        initialize_player(&player, playerName, god_mode_enabled);
     }
-
-    // --- Who won? ---
-    printf("\n--- Combat Over ---\n");
-    if (player.hp <= 0)
-    {
-        printf("%s was defeated! Game Over.\n", player.name);
-        log_event(LOG_COMBAT, "Game over: %s was defeated!", player.name);
+    
+    // --- Main Game Loop ---
+    GameState game_state = GAME_STATE_MENU;
+    
+    while (game_state != GAME_STATE_GAME_OVER && game_state != GAME_STATE_WIN) {
+        game_loop(&player, &game_state);
+        
+        // Check for game over condition
+        if (player.hp <= 0) {
+            printf("\n=== GAME OVER ===\n");
+            printf("You have been defeated!\n");
+            
+            // Ask if they want to clear the save
+            printf("Clear saved game? (y/n): ");
+            char response[10];
+            if (fgets(response, sizeof(response), stdin) != NULL) {
+                // Remove newline
+                response[strcspn(response, "\n")] = '\0';
+                
+                // Convert to lowercase
+                for (int i = 0; response[i]; i++) {
+                    response[i] = tolower(response[i]);
+                }
+                
+                if (response[0] == 'y') {
+                    clear_save();
+                }
+            }
+            
+            game_state = GAME_STATE_GAME_OVER;
+        }
     }
-    else // Enemy must be dead
-    {
-        printf("%s defeated %s! You Win!\n", player.name, enemy.name);
-        log_event(LOG_COMBAT, "Victory: %s defeated %s!", player.name, enemy.name);
-    }
-
-    // --- Clean up ---
-    // TODO: gotta free memory later if we use malloc
+    
+    // --- Cleanup ---
     cleanup_player(&player);
-    // Enemy name is just text, no need to free it
-
-    return 0; // We're done!
+    
+    return 0;
 }
