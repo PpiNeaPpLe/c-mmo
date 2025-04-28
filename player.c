@@ -111,45 +111,46 @@ void initialize_player(Player *player, const char *name, bool god_mode) {
         player->inventory[i] = NULL;
     }
 
-    // --- Give Starting Item: Health Potion ---
-    // Allocate memory for the Item struct itself
-    Item *health_potion = malloc(sizeof(Item));
-    if (health_potion == NULL) {
-        fprintf(stderr, "Fatal Error: Could not allocate memory for health potion item.\n");
-        // Need to free inventory array before exiting
-        free(player->inventory);
-        exit(1);
+    // --- Give Starting Items Based on Class ---
+    Item *starting_item = NULL;
+    
+    // Create different starting items based on class
+    if (player->playerClass == PALADIN) {
+        // Paladins get a stronger basic potion
+        starting_item = create_health_potion(3); // strength 3
+    } else if (player->playerClass == ROGUE) {
+        // Rogues get a random potion (they stole it)
+        starting_item = create_random_potion();
+    } else {
+        // Mages just get a basic potion (they have spells)
+        starting_item = create_health_potion(2); // strength 2
+    }
+    
+    // Safety check for failed item creation
+    if (starting_item == NULL) {
+        // Fallback to basic potion if creation failed
+        starting_item = create_item(HEALING, "Basic Health Potion", 20);
+        
+        if (starting_item == NULL) {
+            // Really bad - can't create any items
+            fprintf(stderr, "Fatal Error: Could not create starting item.\n");
+            free(player->inventory);
+            exit(1);
+        }
     }
 
-    // Allocate memory for the item name string
-    // Use a fixed size buffer temporarily to calculate length
-    char potion_name[] = "Health Potion";
-    health_potion->name = malloc(strlen(potion_name) + 1); // +1 for null terminator
-    if (health_potion->name == NULL) {
-        fprintf(stderr, "Fatal Error: Could not allocate memory for potion name.\n");
-        // Need to free item struct and inventory array before exiting
-        free(health_potion);
-        free(player->inventory);
-        exit(1);
-    }
-    strcpy(health_potion->name, potion_name); // copy name in
-
-    // set other potion fields
-    health_potion->type = HEALING;
-    health_potion->value = 20; // heals 20 hp maybe
-
-    // Add potion to the first inventory slot
+    // Add the potion to the first inventory slot
     if (player->inventory_size < player->inventory_capacity) { 
-        player->inventory[player->inventory_size] = health_potion;
+        player->inventory[player->inventory_size] = starting_item;
         player->inventory_size++;
-        printf("Added %s to inventory.\n", health_potion->name);
+        printf("Added %s to inventory.\n", starting_item->name);
     } else {
         // this shouldnt happen right at the start but good check maybe
         printf("Inventory full? Couldn't add starting potion.\n");
         // BIG PROBLEM: we allocated memory for the potion but can't store it
         // so we MUST free it here to avoid a memory leak
-        free(health_potion->name);
-        free(health_potion);
+        free(starting_item->name);
+        free(starting_item);
     }
 
     printf("Player %s (%s) created! HP: %d/%d, Damage: %d\n", 

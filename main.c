@@ -8,6 +8,7 @@
 #include "player.h"
 #include "enemy.h"
 #include "game.h"
+#include "utils.h" // added utils header
 
 int main(int argc, char *argv[])
 {
@@ -20,6 +21,10 @@ int main(int argc, char *argv[])
     char playerName[MAX_NAME_LENGTH];
     int name_set_from_args = 0; // Flag to see if we got name from args
     bool god_mode_enabled = false; // Flag for god mode
+    int log_level_override = -1;   // -1 means use environment
+
+    // Initialize environment variables first thing
+    setup_env_variables();
 
     // --- Argument Parsing --- 
     for (int i = 1; i < argc; ++i) { // Start from 1 to skip program name
@@ -36,9 +41,68 @@ int main(int argc, char *argv[])
         } else if (strcmp(argv[i], "-god") == 0) {
             god_mode_enabled = true;
             printf("GOD MODE ENABLED!\n");
+        } else if (strcmp(argv[i], "-log") == 0) {
+            // New option for log level
+            if (i + 1 < argc) {
+                // Try to get log level as number
+                log_level_override = atoi(argv[i + 1]);
+                printf("Log level set to: 0x%X\n", log_level_override);
+                i++; // Skip the level argument
+                
+                // Set the environment variable for other modules
+                char env_var[32];
+                sprintf(env_var, "%d", log_level_override);
+                setenv("GAME_LOG_LEVEL", env_var, 1); // 1 means override
+                
+                // Reinitialize environment to apply changes
+                setup_env_variables();
+            } else {
+                fprintf(stderr, "Warning: -log flag requires a numeric argument.\n");
+            }
+        } else if (strcmp(argv[i], "-dif") == 0 || strcmp(argv[i], "-difficulty") == 0) {
+            // Difficulty option
+            if (i + 1 < argc) {
+                int difficulty = atoi(argv[i + 1]);
+                if (difficulty >= 0 && difficulty <= 2) {
+                    char env_var[32];
+                    sprintf(env_var, "%d", difficulty);
+                    setenv("GAME_DIFFICULTY", env_var, 1);
+                    
+                    const char* dif_name = "normal";
+                    if (difficulty == 0) dif_name = "easy";
+                    else if (difficulty == 2) dif_name = "hard";
+                    
+                    printf("Difficulty set to: %s (%d)\n", dif_name, difficulty);
+                    i++; // Skip the difficulty value
+                    
+                    // Reinitialize environment to apply changes
+                    setup_env_variables();
+                } else {
+                    fprintf(stderr, "Warning: Difficulty must be 0 (easy), 1 (normal), or 2 (hard).\n");
+                }
+            } else {
+                fprintf(stderr, "Warning: -difficulty flag requires an argument.\n");
+            }
+        } else if (strcmp(argv[i], "-nofun") == 0) {
+            // Disable Easter eggs
+            setenv("GAME_EASTER_EGGS", "0", 1);
+            printf("Easter eggs disabled. Boring mode activated.\n");
+            
+            // Reinitialize environment to apply changes
+            setup_env_variables();
         } else {
             fprintf(stderr, "Warning: Unknown argument '%s' ignored.\n", argv[i]);
         }
+    }
+
+    // Show command line help if the debug log level is enabled
+    if (is_logging_enabled(LOG_DEBUG)) {
+        log_event(LOG_DEBUG, "Command line options:");
+        log_event(LOG_DEBUG, "  -name NAME     Set player name");
+        log_event(LOG_DEBUG, "  -god           Enable god mode");
+        log_event(LOG_DEBUG, "  -log LEVEL     Set log level (bitfield)");
+        log_event(LOG_DEBUG, "  -dif LEVEL     Set difficulty (0=easy, 1=normal, 2=hard)");
+        log_event(LOG_DEBUG, "  -nofun         Disable Easter eggs");
     }
 
     // Fancy title screen
@@ -59,6 +123,18 @@ int main(int argc, char *argv[])
             printf("Could not read name, proceeding as 'Hero'.\n");
             // might need to clear stdin here? idk, probably fine
         }
+    }
+    
+    // Show environment variables if debug is enabled
+    if (is_logging_enabled(LOG_DEBUG)) {
+        const char* difficulty_env = getenv("GAME_DIFFICULTY");
+        const char* easter_eggs_env = getenv("GAME_EASTER_EGGS");
+        const char* log_level_env = getenv("GAME_LOG_LEVEL");
+        
+        log_event(LOG_DEBUG, "Environment variables set:");
+        log_event(LOG_DEBUG, "  GAME_DIFFICULTY=%s", difficulty_env ? difficulty_env : "not set");
+        log_event(LOG_DEBUG, "  GAME_EASTER_EGGS=%s", easter_eggs_env ? easter_eggs_env : "not set");
+        log_event(LOG_DEBUG, "  GAME_LOG_LEVEL=%s", log_level_env ? log_level_env : "not set");
     }
     
     // Story time!
@@ -95,6 +171,9 @@ int main(int argc, char *argv[])
                player.name, player.hp, player.maxHp, 
                enemy.name, enemy.hp, enemy.maxHp);
 
+        // Log start of turn with our variadic function
+        log_event(LOG_DEBUG, "Starting turn %d", turn);
+
         // Player's turn
         player_turn(&player, &enemy);
         
@@ -112,10 +191,12 @@ int main(int argc, char *argv[])
     if (player.hp <= 0)
     {
         printf("%s was defeated! Game Over.\n", player.name);
+        log_event(LOG_COMBAT, "Game over: %s was defeated!", player.name);
     }
     else // Enemy must be dead
     {
         printf("%s defeated %s! You Win!\n", player.name, enemy.name);
+        log_event(LOG_COMBAT, "Victory: %s defeated %s!", player.name, enemy.name);
     }
 
     // --- Clean up ---

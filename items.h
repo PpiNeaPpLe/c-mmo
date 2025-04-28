@@ -16,6 +16,11 @@ typedef struct {
     int value;          // how much heal/buff etc
 } Item;
 
-// maybe functions later like create_item?
+// Variadic function to create items with custom properties
+Item* create_item(enum ItemType itemType, const char* nameFormat, ...);
+
+// Helper functions using the variadic create_item
+Item* create_health_potion(int strength);
+Item* create_random_potion();
 
 #endif // ITEMS_H 
