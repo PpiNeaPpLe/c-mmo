@@ -13,12 +13,6 @@ void player_turn(Player *player, Enemy *enemy) {
     if (player == NULL || enemy == NULL) return;
 
     int choice;
-    int num_options = 2; // default options
-    
-    // if player is mage, add spell option
-    if (player->playerClass == MAGE) {
-        num_options = 3; // add spell option
-    }
     
     // Show options: Attack, Use Item, Cast Spell (if mage)
     printf("Player %s's turn. Choose action (1: Attack", player->name);
@@ -150,8 +144,8 @@ void player_turn(Player *player, Enemy *enemy) {
             printf("  2: Frost Nova (dmg + freeze)\n");
             printf("  3: Lightning Bolt (dmg + chain)\n");
             printf("  4: Healing Light (heal over time)\n");
-            printf("  5: Random Magic (??)\n");
-            
+            printf("  5: Random Magic (???) \n");
+
             int spell_choice;
             printf("Enter spell number (or 0 to cancel): ");
             if (scanf("%d", &spell_choice) == 1) {
