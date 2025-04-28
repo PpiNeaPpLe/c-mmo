@@ -116,7 +116,6 @@ int main(int argc, char *argv[])
     srand(time(NULL));
 
     Player player;
-    Enemy enemy;
 
     char playerName[MAX_NAME_LENGTH];
     int name_set_from_args = 0; // Flag to see if we got name from args

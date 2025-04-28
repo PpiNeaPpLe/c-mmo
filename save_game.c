@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 // environment variable prefix for save data
 #define SAVE_PREFIX "CMMO_SAVE_"

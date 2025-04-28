@@ -88,9 +88,15 @@ void handle_enemy_defeat(Player *player, Enemy *enemy) {
     player->gold += enemy->gold_value;
     printf("You found %d gold! (Total: %d)\n", enemy->gold_value, player->gold);
     
-    // Add XP and check for level up
+    // Add XP and check for level up - actually use the return value
     printf("Gained %d experience!\n", enemy->xp_value);
     bool leveled_up = add_player_xp(player, enemy->xp_value);
+    
+    // If level up, give a bonus
+    if (leveled_up) {
+        printf("Bonus for leveling up: +10 gold!\n");
+        player->gold += 10;
+    }
     
     // Increment kill counter
     player->kills++;
@@ -640,6 +646,13 @@ void game_loop(Player *player, GameState *state) {
             
         case GAME_STATE_SHOP:
             show_shop(player);
+            *state = GAME_STATE_MENU;
+            break;
+            
+        case GAME_STATE_COMBAT:
+            // This state is typically handled in start_combat 
+            // but we'll add a handler here to avoid the warning
+            printf("Returning to menu from combat mode.\n");
             *state = GAME_STATE_MENU;
             break;
             
