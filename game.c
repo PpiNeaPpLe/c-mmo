@@ -260,7 +260,7 @@ void player_turn(Player *player, Enemy *enemy) {
             printf("  2: Frost Nova (dmg + freeze)\n");
             printf("  3: Lightning Bolt (dmg + chain)\n");
             printf("  4: Healing Light (heal over time)\n");
-            printf("  5: Random Magic (???) \n");
+            printf("  5: Random Magic (random effect) \n");
 
             int spell_choice;
             printf("Enter spell number (or 0 to cancel): ");
