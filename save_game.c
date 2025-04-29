@@ -311,8 +311,17 @@ bool load_game(Player *player, const char *filename) {
             Item *item = malloc(sizeof(Item));
             if (item != NULL) {
                 item->type = item_types[i];
-                strncpy(item->name, item_names[i], 63);
-                item->name[63] = '\0'; // Ensure null-termination
+                
+                // Fix: Allocate memory for item name instead of just copying
+                item->name = malloc(strlen(item_names[i]) + 1);
+                if (item->name == NULL) {
+                    // Handle allocation failure
+                    printf("Error: Failed to allocate memory for item name\n");
+                    free(item);
+                    continue;
+                }
+                strcpy(item->name, item_names[i]);
+                
                 item->value = item_values[i];
                 
                 // Add to inventory
