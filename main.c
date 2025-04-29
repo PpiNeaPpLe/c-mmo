@@ -311,8 +311,8 @@ int main(int argc, char *argv[])
     
     // --- Check for saved game data ---
     bool should_load_save = false;
-    // Only check for existing saves if we have a username
-    if (playerName[0] != '\0') {
+    // Only check for existing saves if we have a username and not forcing new game
+    if (!force_new_game && playerName[0] != '\0') {
         // First check if a specific save file was provided
         if (saveFileName[0] != '\0') {
             should_load_save = save_game_exists(NULL, saveFileName);

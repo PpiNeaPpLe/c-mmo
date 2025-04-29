@@ -98,7 +98,7 @@ bool save_game(Player *player, const char *filename) {
         if (item != NULL) {
             fprintf(file, "ITEM_%d_TYPE,%d\n", i, item->type);
             fprintf(file, "ITEM_%d_NAME,%s\n", i, item->name);
-            fprintf(file, "ITEM_%d_STRENGTH,%d\n", i, item->strength);
+            fprintf(file, "ITEM_%d_VALUE,%d\n", i, item->value);
         }
     }
     
@@ -198,7 +198,7 @@ bool load_game(Player *player, const char *filename) {
     // Arrays to temporarily store item data while parsing
     int item_types[MAX_INVENTORY_CAPACITY];
     char item_names[MAX_INVENTORY_CAPACITY][64];
-    int item_strengths[MAX_INVENTORY_CAPACITY];
+    int item_values[MAX_INVENTORY_CAPACITY];
     bool item_exists[MAX_INVENTORY_CAPACITY] = {false};
     
     while (read_csv_value(file, key, value, sizeof(key))) {
@@ -274,8 +274,8 @@ bool load_game(Player *player, const char *filename) {
                     strncpy(item_names[item_index], value, 63);
                     item_names[item_index][63] = '\0'; // Ensure null-termination
                 }
-                else if (strstr(key, "_STRENGTH") != NULL) {
-                    item_strengths[item_index] = atoi(value);
+                else if (strstr(key, "_VALUE") != NULL) {
+                    item_values[item_index] = atoi(value);
                 }
             }
         }
@@ -313,7 +313,7 @@ bool load_game(Player *player, const char *filename) {
                 item->type = item_types[i];
                 strncpy(item->name, item_names[i], 63);
                 item->name[63] = '\0'; // Ensure null-termination
-                item->strength = item_strengths[i];
+                item->value = item_values[i];
                 
                 // Add to inventory
                 player->inventory[player->inventory_size] = item;
