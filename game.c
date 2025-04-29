@@ -13,6 +13,9 @@
 // Global variable for total turns taken in current combat
 static int g_combat_turn_count = 0;
 
+// External reference to global save filename
+extern char saveFileName[MAX_FILENAME_LENGTH];
+
 // Helper to get user confirmation
 bool get_yes_no(const char *prompt) {
     char input[10];
@@ -120,7 +123,7 @@ void handle_enemy_defeat(Player *player, Enemy *enemy) {
     }
     
     // Autosave after battle
-    save_game(player);
+    save_game(player, saveFileName[0] != '\0' ? saveFileName : NULL);
 }
 
 // Handles the player's turn
@@ -455,7 +458,7 @@ void show_shop(Player *player) {
     }
     
     // auto-save after shopping
-    save_game(player);
+    save_game(player, saveFileName[0] != '\0' ? saveFileName : NULL);
 }
 
 // Show exploration menu options
@@ -502,7 +505,7 @@ void explore_area(Player *player) {
             }
             printf("You rest and recover %d HP. Current HP: %d/%d\n", 
                    heal_amount, player->hp, player->maxHp);
-            save_game(player);
+            save_game(player, saveFileName[0] != '\0' ? saveFileName : NULL);
             break;
         }
         
@@ -511,7 +514,7 @@ void explore_area(Player *player) {
                 if (player->level >= player->area_level + 1) {
                     player->area_level++;
                     printf("You advance to Area %d!\n", player->area_level);
-                    save_game(player);
+                    save_game(player, saveFileName[0] != '\0' ? saveFileName : NULL);
                 } else {
                     printf("You need to be at least level %d to advance!\n", 
                            player->area_level + 1);
@@ -620,10 +623,12 @@ void game_loop(Player *player, GameState *state) {
                     break;
                     
                 case 4: // Save Game
-                    if (save_game(player)) {
-                        printf("Game saved successfully!\n");
-                    } else {
-                        printf("Failed to save game.\n");
+                    {
+                        if (save_game(player, saveFileName[0] != '\0' ? saveFileName : NULL)) {
+                            printf("Game saved successfully!\n");
+                        } else {
+                            printf("Failed to save game.\n");
+                        }
                     }
                     break;
                     

@@ -12,11 +12,15 @@
 #include "utils.h" // added utils header
 #include "save_game.h" // added save game header
 
+// Global save filename for use across multiple functions
+char saveFileName[MAX_FILENAME_LENGTH] = {0};
+
 // prints game usage instructions
 void print_usage(const char* program_name) {
     printf("\nUsage: %s [OPTIONS]\n", program_name);
     printf("\nAvailable options:\n");
     printf("  -name NAME       Set your character's name\n");
+    printf("  -save FILENAME   Specify a save file to load or create\n");
     printf("  -god             Enable god mode (unlimited health & damage)\n");
     printf("  -log LEVEL       Set log level (bitfield: 0-15)\n");
     printf("                   1=errors, 2=combat, 4=debug, 8=funny, 15=all\n");
@@ -28,6 +32,7 @@ void print_usage(const char* program_name) {
     printf("  -help            Show this help message\n");
     printf("\nExamples:\n");
     printf("  %s -name Wizard -log 15 -dif 0\n", program_name);
+    printf("  %s -save wizard.csv -god\n", program_name);
     printf("  %s -god -nofun\n", program_name);
     printf("\n");
 }
@@ -62,6 +67,7 @@ const char* find_closest_param(const char* input) {
     // Common parameters and their typos/variants
     const char* known_params[][3] = {
         {"-name", "-n", "-player"},
+        {"-save", "-savefile", "-s"},
         {"-god", "-godmode", "-g"},
         {"-log", "-l", "-debug"},
         {"-dif", "-difficulty", "-d"},
@@ -154,6 +160,16 @@ int main(int argc, char *argv[])
                 i++; // Skip the next argument (the name itself)
             } else {
                 fprintf(stderr, "Error: -name flag requires an argument.\n");
+                had_invalid_arg = true;
+            }
+        } else if (strcmp(arg, "-save") == 0) {
+            if (i + 1 < argc) {
+                strncpy(saveFileName, argv[i + 1], MAX_FILENAME_LENGTH - 1);
+                saveFileName[MAX_FILENAME_LENGTH - 1] = '\0'; // Ensure null termination
+                printf("Save file specified: %s\n", saveFileName);
+                i++; // Skip the next argument (the filename)
+            } else {
+                fprintf(stderr, "Error: -save flag requires a filename argument.\n");
                 had_invalid_arg = true;
             }
         } else if (strcmp(arg, "-god") == 0) {
@@ -296,24 +312,38 @@ int main(int argc, char *argv[])
     // --- Check for saved game ---
     bool should_load_save = false;
     
-    if (!force_new_game && save_game_exists()) {
-        printf("\nSaved game found!\n");
-        printf("Do you want to load your saved game?\n");
-        
-        // Get yes/no
-        char response[10];
-        printf("Load game? (y/n): ");
-        if (fgets(response, sizeof(response), stdin) != NULL) {
-            // Remove newline
-            response[strcspn(response, "\n")] = '\0';
-            
-            // Convert to lowercase
-            for (int i = 0; response[i]; i++) {
-                response[i] = tolower(response[i]);
+    if (!force_new_game) {
+        // First check if a specific save file was provided
+        if (saveFileName[0] != '\0') {
+            should_load_save = save_game_exists(playerName, saveFileName);
+            if (should_load_save) {
+                printf("\nSave file '%s' found!\n", saveFileName);
+                printf("Loading game automatically...\n");
+            } else {
+                printf("\nSave file '%s' not found. Starting new game.\n", saveFileName);
+                // Will create this file when saving
             }
+        } 
+        // If no specific save was provided, check for default save with username
+        else if (save_game_exists(playerName, NULL)) {
+            printf("\nSaved game found for '%s'!\n", playerName);
+            printf("Do you want to load your saved game?\n");
             
-            if (response[0] == 'y') {
-                should_load_save = true;
+            // Get yes/no
+            char response[10];
+            printf("Load game? (y/n): ");
+            if (fgets(response, sizeof(response), stdin) != NULL) {
+                // Remove newline
+                response[strcspn(response, "\n")] = '\0';
+                
+                // Convert to lowercase
+                for (int i = 0; response[i]; i++) {
+                    response[i] = tolower(response[i]);
+                }
+                
+                if (response[0] == 'y') {
+                    should_load_save = true;
+                }
             }
         }
     }
@@ -324,7 +354,7 @@ int main(int argc, char *argv[])
         initialize_player(&player, "temp", god_mode_enabled);
         
         // Then load saved data
-        if (load_game(&player)) {
+        if (load_game(&player, saveFileName[0] != '\0' ? saveFileName : NULL)) {
             printf("Game loaded successfully!\n");
             
             // Set god mode if enabled in command line
@@ -369,7 +399,7 @@ int main(int argc, char *argv[])
                 }
                 
                 if (response[0] == 'y') {
-                    clear_save();
+                    clear_save(saveFileName[0] != '\0' ? saveFileName : NULL);
                 }
             }
             

@@ -32,6 +32,11 @@ void initialize_player(Player *player, const char *name, bool god_mode) {
     // Now copy the name using strcpy (safe because we allocated enough space)
     strcpy(player->name, name); 
     
+    // Initialize status flags to prevent uninitialized values
+    player->is_poisoned = 0;
+    player->is_shielded = 0;
+    player->turn_skipped = 0;
+    
     int choice = 0;
     int validInput = 0;
 
