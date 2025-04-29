@@ -352,7 +352,7 @@ int main(int argc, char *argv[])
     if (should_load_save) {
         // Initialize with dummy name first, but don't prompt for class
         // Just create a basic player object that we'll overwrite with saved data
-        player.name = strdup("temp"); // Temporary name that will be replaced
+        player.name = strdup(playerName); // Use the actual player name instead of "temp"
         player.inventory = NULL;      // Will be initialized by load_game
         player.inventory_size = 0;
         player.inventory_capacity = 0;

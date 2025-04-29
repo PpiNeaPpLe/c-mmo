@@ -353,6 +353,9 @@ bool save_game_exists(const char *username, const char *filename) {
         get_save_filename(save_path, NULL, "default.csv");
     }
     
+    // Debug print to see what path is being checked
+    printf("Checking for save file at: %s\n", save_path);
+    
     FILE *file = fopen(save_path, "r");
     if (file == NULL) {
         return false;
