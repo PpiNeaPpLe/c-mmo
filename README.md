@@ -2,6 +2,8 @@
 
 A basic command-line RPG prototype built in C.
 
+[Google Slides Presentation](https://docs.google.com/presentation/d/1p11HXdzm4x1JdRd80vCJWSyHLXaHF7syj5J0WK-eV6g/edit?usp=sharing)
+
 ## Core Concept
 
 The player chooses from one of three distinct classes and utilizes their unique abilities in a turn-based system. The game also features consumable items.
