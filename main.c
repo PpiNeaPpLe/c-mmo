@@ -309,10 +309,10 @@ int main(int argc, char *argv[])
         }
     }
     
-    // --- Check for saved game ---
+    // --- Check for saved game data ---
     bool should_load_save = false;
-    
-    if (!force_new_game) {
+    // Only check for existing saves if we have a username
+    if (playerName[0] != '\0') {
         // First check if a specific save file was provided
         if (saveFileName[0] != '\0') {
             should_load_save = save_game_exists(NULL, saveFileName);
@@ -358,24 +358,40 @@ int main(int argc, char *argv[])
         player.inventory_capacity = 0;
         
         // Then load saved data
-        if (load_game(&player, saveFileName[0] != '\0' ? saveFileName : NULL)) {
-            printf("Game loaded successfully!\n");
-            
-            // Set god mode if enabled in command line
-            if (god_mode_enabled) {
-                printf("God mode enabled for loaded character!\n");
-                player.hp = 9999;
-                player.maxHp = 9999;
-                player.damage = 999;
+        if (saveFileName[0] != '\0') {
+            // Use the explicit save file if provided
+            if (load_game(&player, saveFileName)) {
+                printf("Game loaded successfully!\n");
+            } else {
+                // Fall back to new game if load fails
+                printf("Failed to load game, starting new game instead.\n");
+                if (player.name != NULL) {
+                    free(player.name); // Free the temporary name
+                    player.name = NULL;
+                }
+                initialize_player(&player, playerName, god_mode_enabled);
             }
         } else {
-            // Fall back to new game if load fails
-            printf("Failed to load game, starting new game instead.\n");
-            if (player.name != NULL) {
-                free(player.name); // Free the temporary name
-                player.name = NULL;
+            // Otherwise try to load by username
+            if (load_game(&player, NULL)) {
+                printf("Game loaded successfully!\n");
+            } else {
+                // Fall back to new game if load fails
+                printf("Failed to load game, starting new game instead.\n");
+                if (player.name != NULL) {
+                    free(player.name); // Free the temporary name
+                    player.name = NULL;
+                }
+                initialize_player(&player, playerName, god_mode_enabled);
             }
-            initialize_player(&player, playerName, god_mode_enabled);
+        }
+        
+        // Set god mode if enabled in command line
+        if (god_mode_enabled) {
+            printf("God mode enabled for loaded character!\n");
+            player.hp = 9999;
+            player.maxHp = 9999;
+            player.damage = 999;
         }
     } else {
         // Start new game

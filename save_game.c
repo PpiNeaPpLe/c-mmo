@@ -7,6 +7,9 @@
 #include <sys/stat.h>
 #include <errno.h>
 
+// Maximum number of items that can be saved/loaded
+#define MAX_INVENTORY_CAPACITY 20
+
 #ifdef _WIN32
 #include <direct.h>  // For _mkdir on Windows
 #define mkdir(dir, mode) _mkdir(dir)  // Windows doesn't use mode
@@ -84,6 +87,20 @@ bool save_game(Player *player, const char *filename) {
     fprintf(file, "IS_POISONED,%d\n", (int)player->is_poisoned);
     fprintf(file, "IS_SHIELDED,%d\n", (int)player->is_shielded);
     fprintf(file, "TURN_SKIPPED,%d\n", (int)player->turn_skipped);
+    
+    // Write inventory data
+    fprintf(file, "INV_SIZE,%d\n", player->inventory_size);
+    fprintf(file, "INV_CAPACITY,%d\n", player->inventory_capacity);
+    
+    // Save each inventory item
+    for (int i = 0; i < player->inventory_size; i++) {
+        Item *item = player->inventory[i];
+        if (item != NULL) {
+            fprintf(file, "ITEM_%d_TYPE,%d\n", i, item->type);
+            fprintf(file, "ITEM_%d_NAME,%s\n", i, item->name);
+            fprintf(file, "ITEM_%d_STRENGTH,%d\n", i, item->strength);
+        }
+    }
     
     // Write timestamp
     fprintf(file, "TIMESTAMP,%ld\n", (long)time(NULL));
@@ -175,6 +192,14 @@ bool load_game(Player *player, const char *filename) {
     char key[100];
     char value[400];
     bool name_found = false;
+    int saved_inventory_size = 0;
+    int saved_inventory_capacity = INITIAL_INVENTORY_CAPACITY;
+    
+    // Arrays to temporarily store item data while parsing
+    int item_types[MAX_INVENTORY_CAPACITY];
+    char item_names[MAX_INVENTORY_CAPACITY][64];
+    int item_strengths[MAX_INVENTORY_CAPACITY];
+    bool item_exists[MAX_INVENTORY_CAPACITY] = {false};
     
     while (read_csv_value(file, key, value, sizeof(key))) {
         if (strcmp(key, "NAME") == 0) {
@@ -229,6 +254,31 @@ bool load_game(Player *player, const char *filename) {
         else if (strcmp(key, "TURN_SKIPPED") == 0) {
             player->turn_skipped = (atoi(value) != 0);
         }
+        else if (strcmp(key, "INV_SIZE") == 0) {
+            saved_inventory_size = atoi(value);
+        }
+        else if (strcmp(key, "INV_CAPACITY") == 0) {
+            saved_inventory_capacity = atoi(value);
+        }
+        // Check for item data - parse keys like ITEM_0_TYPE, ITEM_0_NAME, etc.
+        else if (strncmp(key, "ITEM_", 5) == 0) {
+            // Extract item index from the key (e.g., from "ITEM_0_TYPE" get 0)
+            int item_index = atoi(key + 5);
+            if (item_index >= 0 && item_index < MAX_INVENTORY_CAPACITY) {
+                // Check which property this is (TYPE, NAME, STRENGTH)
+                if (strstr(key, "_TYPE") != NULL) {
+                    item_types[item_index] = atoi(value);
+                    item_exists[item_index] = true;
+                }
+                else if (strstr(key, "_NAME") != NULL) {
+                    strncpy(item_names[item_index], value, 63);
+                    item_names[item_index][63] = '\0'; // Ensure null-termination
+                }
+                else if (strstr(key, "_STRENGTH") != NULL) {
+                    item_strengths[item_index] = atoi(value);
+                }
+            }
+        }
         // Ignore any other keys (like TIMESTAMP)
     }
     
@@ -239,9 +289,9 @@ bool load_game(Player *player, const char *filename) {
         return false;
     }
     
-    // Initialize inventory (empty for now)
-    player->inventory_capacity = INITIAL_INVENTORY_CAPACITY;
-    player->inventory_size = 0;
+    // Initialize inventory
+    player->inventory_capacity = saved_inventory_capacity;
+    player->inventory_size = 0; // Will be incremented as we add items
     player->inventory = malloc(sizeof(Item*) * player->inventory_capacity);
     
     if (player->inventory == NULL) {
@@ -254,11 +304,31 @@ bool load_game(Player *player, const char *filename) {
         player->inventory[i] = NULL;
     }
     
-    // Give player a health potion when loading a save
-    Item *potion = create_health_potion(player->level);
-    if (potion != NULL) {
-        player->inventory[0] = potion;
-        player->inventory_size = 1;
+    // Create items from saved data
+    for (int i = 0; i < saved_inventory_size; i++) {
+        if (item_exists[i]) {
+            // Allocate memory for the item
+            Item *item = malloc(sizeof(Item));
+            if (item != NULL) {
+                item->type = item_types[i];
+                strncpy(item->name, item_names[i], 63);
+                item->name[63] = '\0'; // Ensure null-termination
+                item->strength = item_strengths[i];
+                
+                // Add to inventory
+                player->inventory[player->inventory_size] = item;
+                player->inventory_size++;
+            }
+        }
+    }
+    
+    // If inventory is empty (possibly due to error), add a health potion
+    if (player->inventory_size == 0) {
+        Item *potion = create_health_potion(player->level);
+        if (potion != NULL) {
+            player->inventory[0] = potion;
+            player->inventory_size = 1;
+        }
     }
     
     printf("Game loaded successfully for %s (Level %d) from '%s'!\n", 
