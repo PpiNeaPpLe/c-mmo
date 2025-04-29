@@ -143,10 +143,16 @@ bool load_game(Player *player, const char *filename) {
     }
     
     char save_path[MAX_FILENAME_LENGTH];
-    get_save_filename(save_path, player->name, filename);
+    
+    // The key fix: using the global saveFileName if provided, otherwise check for player->name.csv
+    // But we should only use player->name if it's not the temporary name "temp"
+    const char* username = (player->name != NULL && strcmp(player->name, "temp") != 0) ? player->name : NULL;
+    
+    // Determine the path to the save file based on provided filename or username
+    get_save_filename(save_path, username, filename);
     
     // Check if save file exists
-    if (!save_game_exists(player->name, filename)) {
+    if (!save_game_exists(username, filename)) {
         printf("No saved game found at '%s'!\n", save_path);
         return false;
     }
@@ -263,7 +269,19 @@ bool load_game(Player *player, const char *filename) {
 // Check if a saved game exists
 bool save_game_exists(const char *username, const char *filename) {
     char save_path[MAX_FILENAME_LENGTH];
-    get_save_filename(save_path, username, filename);
+    
+    // If we have a filename, it takes precedence
+    if (filename != NULL && filename[0] != '\0') {
+        get_save_filename(save_path, NULL, filename);
+    } 
+    // Otherwise use username
+    else if (username != NULL && username[0] != '\0') {
+        get_save_filename(save_path, username, NULL);
+    }
+    // Fallback to default if neither exists
+    else {
+        get_save_filename(save_path, NULL, "default.csv");
+    }
     
     FILE *file = fopen(save_path, "r");
     if (file == NULL) {

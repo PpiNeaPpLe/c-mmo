@@ -315,7 +315,7 @@ int main(int argc, char *argv[])
     if (!force_new_game) {
         // First check if a specific save file was provided
         if (saveFileName[0] != '\0') {
-            should_load_save = save_game_exists(playerName, saveFileName);
+            should_load_save = save_game_exists(NULL, saveFileName);
             if (should_load_save) {
                 printf("\nSave file '%s' found!\n", saveFileName);
                 printf("Loading game automatically...\n");
@@ -350,8 +350,12 @@ int main(int argc, char *argv[])
     
     // --- Initialize Player ---
     if (should_load_save) {
-        // Initialize with dummy name first
-        initialize_player(&player, "temp", god_mode_enabled);
+        // Initialize with dummy name first, but don't prompt for class
+        // Just create a basic player object that we'll overwrite with saved data
+        player.name = strdup("temp"); // Temporary name that will be replaced
+        player.inventory = NULL;      // Will be initialized by load_game
+        player.inventory_size = 0;
+        player.inventory_capacity = 0;
         
         // Then load saved data
         if (load_game(&player, saveFileName[0] != '\0' ? saveFileName : NULL)) {
@@ -367,7 +371,10 @@ int main(int argc, char *argv[])
         } else {
             // Fall back to new game if load fails
             printf("Failed to load game, starting new game instead.\n");
-            cleanup_player(&player); // Clean up any partial loading
+            if (player.name != NULL) {
+                free(player.name); // Free the temporary name
+                player.name = NULL;
+            }
             initialize_player(&player, playerName, god_mode_enabled);
         }
     } else {
