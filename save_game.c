@@ -5,23 +5,20 @@
 #include <string.h>
 #include <time.h>
 #include <sys/stat.h>
+#include <errno.h>
+
+#ifdef _WIN32
+#include <direct.h>  // For _mkdir on Windows
+#define mkdir(dir, mode) _mkdir(dir)  // Windows doesn't use mode
+#endif
 
 // Helper function to ensure the save directory exists
 static bool ensure_save_directory() {
     // Create save directory if it doesn't exist
-    #ifdef _WIN32
-    // Windows
-    if (mkdir(DEFAULT_SAVE_DIR) != 0 && errno != EEXIST) {
-        printf("Warning: Could not create save directory\n");
-        return false;
-    }
-    #else
-    // Unix-like systems
     if (mkdir(DEFAULT_SAVE_DIR, 0755) != 0 && errno != EEXIST) {
         printf("Warning: Could not create save directory\n");
         return false;
     }
-    #endif
     return true;
 }
 
